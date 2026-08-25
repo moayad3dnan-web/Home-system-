@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>مهامي — نظام تنظيم المنزل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Markazi+Text:wght@500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F3EC; --surface:#FFFFFF; --surface-alt:#EFEAE0; --ink:#2B3A2F; --ink-soft:#6B7A6E;
+    --line:#E1DACB; --sage:#6B8F71; --sage-tint:#E7EFE6; --sage-strong:#4F6E55;
+    --amber:#D9A441; --amber-tint:#FBF1DD;
+    --danger:#C0392B;
+  }
+  html.dark{
+    --bg:#1B211C; --surface:#242B25; --surface-alt:#2C332D; --ink:#EAE7DD; --ink-soft:#9BA89D;
+    --line:#3A423B; --sage:#7DAA85; --sage-tint:#2A3C2D; --sage-strong:#9BC6A2;
+    --amber:#E3B45C; --amber-tint:#3A331E;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ background:var(--bg); color:var(--ink); font-family:'Cairo',sans-serif; -webkit-tap-highlight-color:transparent; min-height:100%; }
+  body{ padding-bottom:40px; }
+  button{ font-family:'Cairo',sans-serif; cursor:pointer; }
+
+  .rail{ position:fixed; top:0; bottom:0; right:0; width:6px; background:linear-gradient(180deg, var(--sage), var(--amber)); }
+  .conn-dot{ position:fixed; top:14px; left:14px; font-size:11px; z-index:5; }
+
+  .header{ padding:28px 20px 20px; max-width:600px; margin:0 auto; text-align:center; }
+  .header .eyebrow{ font-size:12px; font-weight:700; color:var(--sage-strong); letter-spacing:0.5px; }
+  .header h1{ font-family:'Markazi Text',serif; font-size:32px; font-weight:700; margin-top:2px; }
+  .header .date{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+
+  .content{ max-width:600px; margin:0 auto; padding:0 20px; }
+
+  /* who-are-you screen */
+  .who-wrap{ display:flex; flex-direction:column; align-items:center; padding:40px 20px; text-align:center; }
+  .who-wrap .ic{ font-size:40px; margin-bottom:14px; }
+  .who-wrap h2{ font-family:'Markazi Text',serif; font-size:24px; font-weight:700; margin-bottom:20px; }
+  .who-list{ display:flex; flex-direction:column; gap:10px; width:100%; max-width:340px; }
+  .who-btn{
+    display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:14px; border:1px solid var(--line);
+    background:var(--surface); font-size:15px; font-weight:700; color:var(--ink);
+  }
+  .who-dot{ width:14px; height:14px; border-radius:50%; flex:none; }
+  .who-empty{ font-size:13px; color:var(--ink-soft); }
+
+  .switch-bar{ text-align:center; margin-bottom:16px; }
+  .switch-bar button{ background:none; border:none; color:var(--ink-soft); font-size:12px; text-decoration:underline; }
+  .greet{ text-align:center; margin-bottom:18px; }
+  .greet .name{ font-family:'Markazi Text',serif; font-size:26px; font-weight:700; color:var(--sage-strong); }
+
+  .stats-row{ display:flex; gap:10px; margin-bottom:20px; }
+  .stat-card{ flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 12px; text-align:center; }
+  .stat-card .n{ font-size:24px; font-weight:800; color:var(--sage-strong); }
+  .stat-card.urgent .n{ color:var(--danger); }
+  .stat-card .lbl{ font-size:10.5px; color:var(--ink-soft); margin-top:2px; font-weight:600; }
+
+  .task-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:10px;
+    display:flex; align-items:flex-start; gap:12px; position:relative; overflow:hidden; transition:opacity .25s ease;
+  }
+  .task-card::before{ content:''; position:absolute; top:0; bottom:0; right:0; width:5px; background:var(--cat-color, var(--sage)); }
+  .task-card.done{ opacity:0.55; }
+  .task-check{
+    flex:none; width:28px; height:28px; border-radius:50%; border:2px solid var(--cat-color, var(--sage));
+    background:none; display:flex; align-items:center; justify-content:center; font-size:15px; color:transparent; margin-top:2px;
+  }
+  .task-check.checked{ background:var(--cat-color, var(--sage)); color:#fff; }
+  .task-body{ flex:1; min-width:0; }
+  .task-title{ font-weight:700; font-size:14.5px; }
+  .task-title.strike{ text-decoration:line-through; color:var(--ink-soft); }
+  .task-notes{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
+  .task-meta{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .task-tag{ font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:8px; background:var(--surface-alt); color:var(--ink-soft); }
+
+  .empty-state{ text-align:center; color:var(--ink-soft); padding:50px 20px; font-size:13px; }
+  .empty-state .ic{ font-size:34px; margin-bottom:10px; }
+
+  .dark-toggle{
+    position:fixed; top:12px; right:16px; background:none; border:none; font-size:18px; z-index:5;
+  }
+</style>
+</head>
+<body>
+<div class="rail"></div>
+<div class="conn-dot" id="connDot">🟢</div>
+<button class="dark-toggle" id="darkToggle">🌙</button>
+
+<div class="header">
+  <div class="eyebrow">مهامي الشخصية</div>
+  <h1>✅ مهامي اليوم</h1>
+  <div class="date" id="todayDate"></div>
+</div>
+
+<div class="content">
+  <div id="whoScreen" class="who-wrap" style="display:none;">
+    <div class="ic">👋</div>
+    <h2>وش اسمك؟</h2>
+    <div class="who-list" id="whoList"></div>
+  </div>
+
+  <div id="mainScreen" style="display:none;">
+    <div class="switch-bar"><button id="switchIdentityBtn">مو أنا؟ غيّر الاسم</button></div>
+    <div class="greet">مرحباً، <span class="name" id="greetName"></span> 👋</div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="n" id="statPending">0</div>
+        <div class="lbl">مهام باقية</div>
+      </div>
+      <div class="stat-card urgent">
+        <div class="n" id="statOverdue">0</div>
+        <div class="lbl">متأخرة</div>
+      </div>
+      <div class="stat-card">
+        <div class="n" id="statDone">0</div>
+        <div class="lbl">مكتملة اليوم</div>
+      </div>
+    </div>
+
+    <div id="taskList"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyASZzpHN3naZ3UxlRGS-VaDiNZV4-upmzA",
+    authDomain: "professional-restaurant-system.firebaseapp.com",
+    projectId: "professional-restaurant-system",
+    storageBucket: "professional-restaurant-system.firebasestorage.app",
+    messagingSenderId: "809714960687",
+    appId: "1:809714960687:web:649fc13dd48972052139da",
+    measurementId: "G-397FXE7298"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  window.homeConnStatus = { ok: true };
+
+  const tasksRef = doc(db, 'homeSystem', 'tasks');
+  onSnapshot(tasksRef, (snap) => {
+    window.homeConnStatus.ok = true;
+    const tasks = (snap.exists() && snap.data().tasks) ? snap.data().tasks : [];
+    window.homeTasks = tasks;
+    if (window.onHomeTasksUpdate) window.onHomeTasksUpdate(tasks);
+  }, (err) => { window.homeConnStatus.ok = false; console.warn('tasks sync error:', err); });
+
+  const membersRef = doc(db, 'homeSystem', 'members');
+  onSnapshot(membersRef, (snap) => {
+    const members = (snap.exists() && snap.data().members) ? snap.data().members : [];
+    window.homeMembers = members;
+    if (window.onHomeMembersUpdate) window.onHomeMembersUpdate(members);
+  }, (err) => console.warn('members sync error:', err));
+
+  const categoriesRef = doc(db, 'homeSystem', 'categories');
+  onSnapshot(categoriesRef, (snap) => {
+    const categories = (snap.exists() && snap.data().categories) ? snap.data().categories : null;
+    window.homeCategories = categories;
+    if (window.onHomeCategoriesUpdate) window.onHomeCategoriesUpdate(categories);
+  }, (err) => console.warn('categories sync error:', err));
+
+  window.saveHomeTasks = function(tasks){
+    return setDoc(tasksRef, { tasks, updatedAt: Date.now() }).then(() => true).catch(() => false);
+  };
+</script>
+
+<script>
+(function(){
+  const DEFAULT_CATEGORIES = [
+    { key:'clean', label:'تنظيف', icon:'🧹', color:'#6B8F71' },
+    { key:'shop', label:'تسوق', icon:'🛒', color:'#D9A441' },
+    { key:'maint', label:'صيانة', icon:'🔧', color:'#B56B4F' },
+    { key:'bills', label:'فواتير', icon:'💳', color:'#5B7A99' },
+    { key:'cook', label:'طبخ', icon:'🍳', color:'#8B5A7C' },
+    { key:'general', label:'عام', icon:'📌', color:'#7A7266' },
+  ];
+  const PROTECTED_CATEGORY_KEY = 'general';
+  let CATEGORIES = [...DEFAULT_CATEGORIES];
+  let CAT_MAP = {};
+  function rebuildCatMap(){ CAT_MAP = {}; CATEGORIES.forEach(c => CAT_MAP[c.key] = c); }
+  rebuildCatMap();
+
+  const RECURRENCE_OPTS = [
+    { key:'once', label:'مرة وحدة' },
+    { key:'daily', label:'يومي' },
+    { key:'weekly', label:'أسبوعي' },
+    { key:'monthly', label:'شهري' },
+  ];
+
+  function escapeHtml(str){
+    if(str === null || str === undefined) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function isoWeekKey(d){
+    const date = new Date(d.getTime());
+    date.setHours(0,0,0,0);
+    date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    const weekNo = 1 + Math.round(((date - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    return date.getFullYear() + '-W' + weekNo;
+  }
+  function monthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+
+  function isTaskDoneNow(task){
+    if(!task.lastCompletedDate) return false;
+    const last = new Date(task.lastCompletedDate + 'T00:00:00');
+    const now = new Date();
+    if(task.recurrence === 'once') return true;
+    if(task.recurrence === 'daily') return task.lastCompletedDate === todayStr();
+    if(task.recurrence === 'weekly') return isoWeekKey(last) === isoWeekKey(now);
+    if(task.recurrence === 'monthly') return monthKey(last) === monthKey(now);
+    return false;
+  }
+  function isTaskOverdue(task){
+    if(isTaskDoneNow(task)) return false;
+    if(task.recurrence === 'once' && task.dueDate) return task.dueDate < todayStr();
+    return false;
+  }
+
+  let tasks = [];
+  let members = [];
+  let myId = null;
+
+  function loadCache(){
+    try{ const raw = localStorage.getItem('home-tasks-cache'); if(raw) tasks = JSON.parse(raw); }catch(e){}
+    try{ const raw = localStorage.getItem('home-members-cache'); if(raw) members = JSON.parse(raw); }catch(e){}
+    try{ const raw = localStorage.getItem('home-categories-cache'); if(raw){ const p = JSON.parse(raw); if(p && p.length){ CATEGORIES = p; rebuildCatMap(); } } }catch(e){}
+    try{ myId = localStorage.getItem('home-member-my-id') || null; }catch(e){}
+  }
+  loadCache();
+
+  function saveTasksNow(){
+    try{ localStorage.setItem('home-tasks-cache', JSON.stringify(tasks)); }catch(e){}
+    if(window.saveHomeTasks) return window.saveHomeTasks(tasks);
+    return Promise.resolve(false);
+  }
+
+  function renderWhoScreen(){
+    const wrap = document.getElementById('whoList');
+    if(!members.length){
+      wrap.innerHTML = `<div class="who-empty">ما فيه أفراد مضافين بعد — لازم صاحب البيت يضيفهم أول من النظام الأساسي</div>`;
+      return;
+    }
+    wrap.innerHTML = members.map(m => `
+      <button class="who-btn" data-pick-member="${m.id}">
+        <span class="who-dot" style="background:${m.color || '#6B8F71'}"></span>
+        ${escapeHtml(m.name)}
+      </button>`).join('');
+    wrap.querySelectorAll('[data-pick-member]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        myId = btn.dataset.pickMember;
+        try{ localStorage.setItem('home-member-my-id', myId); }catch(e){}
+        showMainScreen();
+      });
+    });
+  }
+
+  function showWhoScreen(){
+    document.getElementById('whoScreen').style.display = 'flex';
+    document.getElementById('mainScreen').style.display = 'none';
+    renderWhoScreen();
+  }
+  function showMainScreen(){
+    const me = members.find(m => m.id === myId);
+    if(!me){ showWhoScreen(); return; }
+    document.getElementById('whoScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'block';
+    document.getElementById('greetName').textContent = me.name;
+    renderMyTasks();
+  }
+
+  function myTasks(){
+    return tasks.filter(t => t.assignee === myId);
+  }
+
+  function renderMyTasks(){
+    const mine = myTasks();
+    const pending = mine.filter(t => !isTaskDoneNow(t)).length;
+    const overdue = mine.filter(t => isTaskOverdue(t)).length;
+    const doneToday = mine.filter(t => t.lastCompletedDate === todayStr()).length;
+    document.getElementById('statPending').textContent = pending;
+    document.getElementById('statOverdue').textContent = overdue;
+    document.getElementById('statDone').textContent = doneToday;
+
+    const wrap = document.getElementById('taskList');
+    if(!mine.length){
+      wrap.innerHTML = `<div class="empty-state"><div class="ic">🌸</div>ما فيه مهام معينة لك حالياً — استمتع بوقتك!</div>`;
+      return;
+    }
+
+    const sorted = [...mine].sort((a,b) => {
+      const aDone = isTaskDoneNow(a) ? 1 : 0;
+      const bDone = isTaskDoneNow(b) ? 1 : 0;
+      if(aDone !== bDone) return aDone - bDone;
+      const aOverdue = isTaskOverdue(a) ? 0 : 1;
+      const bOverdue = isTaskOverdue(b) ? 0 : 1;
+      if(aOverdue !== bOverdue) return aOverdue - bOverdue;
+      return (b.createdAt||0) - (a.createdAt||0);
+    });
+
+    wrap.innerHTML = sorted.map(t => {
+      const cat = CAT_MAP[t.category] || CAT_MAP[PROTECTED_CATEGORY_KEY];
+      const done = isTaskDoneNow(t);
+      const overdue = isTaskOverdue(t);
+      const recLabel = (RECURRENCE_OPTS.find(r => r.key === t.recurrence) || {}).label || '';
+      return `
+      <div class="task-card ${done?'done':''}" style="--cat-color:${cat.color}">
+        <button class="task-check ${done?'checked':''}" data-toggle-task="${t.id}">${done?'✓':''}</button>
+        <div class="task-body">
+          <div class="task-title ${done?'strike':''}">${cat.icon} ${escapeHtml(t.title)}</div>
+          ${t.notes ? `<div class="task-notes">${escapeHtml(t.notes)}</div>` : ''}
+          <div class="task-meta">
+            <span class="task-tag">${cat.label}</span>
+            ${recLabel ? `<span class="task-tag">${recLabel}</span>` : ''}
+            ${overdue ? `<span class="task-tag" style="background:rgba(192,57,43,0.15); color:var(--danger);">⚠️ متأخرة</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('[data-toggle-task]').forEach(btn => {
+      btn.addEventListener('click', () => toggleTask(btn.dataset.toggleTask));
+    });
+  }
+
+  function toggleTask(id){
+    const t = tasks.find(x => x.id === id);
+    if(!t) return;
+    const nowDone = isTaskDoneNow(t);
+    t.lastCompletedDate = nowDone ? null : todayStr();
+    renderMyTasks();
+    saveTasksNow();
+  }
+
+  window.onHomeTasksUpdate = function(remoteTasks){
+    tasks = remoteTasks;
+    try{ localStorage.setItem('home-tasks-cache', JSON.stringify(tasks)); }catch(e){}
+    if(document.getElementById('mainScreen').style.display !== 'none') renderMyTasks();
+  };
+  window.onHomeMembersUpdate = function(remoteMembers){
+    members = remoteMembers;
+    try{ localStorage.setItem('home-members-cache', JSON.stringify(members)); }catch(e){}
+    if(document.getElementById('whoScreen').style.display !== 'none') renderWhoScreen();
+    else showMainScreen();
+  };
+  window.onHomeCategoriesUpdate = function(remoteCategories){
+    if(remoteCategories && remoteCategories.length){
+      CATEGORIES = remoteCategories;
+      rebuildCatMap();
+      try{ localStorage.setItem('home-categories-cache', JSON.stringify(CATEGORIES)); }catch(e){}
+      if(document.getElementById('mainScreen').style.display !== 'none') renderMyTasks();
+    }
+  };
+
+  document.getElementById('switchIdentityBtn').addEventListener('click', () => {
+    myId = null;
+    try{ localStorage.removeItem('home-member-my-id'); }catch(e){}
+    showWhoScreen();
+  });
+
+  // ---------- dark mode ----------
+  function loadDarkPref(){ try{ return localStorage.getItem('home-dark-mode') === '1'; }catch(e){ return false; } }
+  let isDark = loadDarkPref();
+  function applyDark(){
+    document.documentElement.classList.toggle('dark', isDark);
+    document.getElementById('darkToggle').textContent = isDark ? '☀️' : '🌙';
+  }
+  document.getElementById('darkToggle').addEventListener('click', () => {
+    isDark = !isDark;
+    try{ localStorage.setItem('home-dark-mode', isDark ? '1' : '0'); }catch(e){}
+    applyDark();
+  });
+
+  // ---------- connection indicator ----------
+  window.homeConnStatus = window.homeConnStatus || { ok: true };
+  setInterval(() => {
+    document.getElementById('connDot').textContent = window.homeConnStatus.ok ? '🟢' : '🔴';
+  }, 2000);
+
+  // ---------- init ----------
+  const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const now = new Date();
+  document.getElementById('todayDate').textContent = dayNames[now.getDay()] + '، ' + now.getDate() + ' ' + monthNames[now.getMonth()];
+
+  applyDark();
+  if(myId){ showMainScreen(); } else { showWhoScreen(); }
+})();
+</script>
+
+</body>
+</html>

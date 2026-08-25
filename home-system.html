@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>نظام تنظيم المنزل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Markazi+Text:wght@500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F3EC; --surface:#FFFFFF; --surface-alt:#EFEAE0; --ink:#2B3A2F; --ink-soft:#6B7A6E;
+    --line:#E1DACB; --sage:#6B8F71; --sage-tint:#E7EFE6; --sage-strong:#4F6E55;
+    --amber:#D9A441; --amber-tint:#FBF1DD;
+    --cat-clean:#6B8F71; --cat-shop:#D9A441; --cat-maint:#B56B4F; --cat-bills:#5B7A99; --cat-cook:#8B5A7C; --cat-general:#7A7266;
+    --danger:#C0392B;
+  }
+  html.dark{
+    --bg:#1B211C; --surface:#242B25; --surface-alt:#2C332D; --ink:#EAE7DD; --ink-soft:#9BA89D;
+    --line:#3A423B; --sage:#7DAA85; --sage-tint:#2A3C2D; --sage-strong:#9BC6A2;
+    --amber:#E3B45C; --amber-tint:#3A331E;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ background:var(--bg); color:var(--ink); font-family:'Cairo',sans-serif; -webkit-tap-highlight-color:transparent; min-height:100%; }
+  body{ padding-bottom:40px; }
+  button{ font-family:'Cairo',sans-serif; cursor:pointer; }
+  input, select, textarea{ font-family:'Cairo',sans-serif; }
+  ::placeholder{ color:var(--ink-soft); opacity:0.7; }
+
+  .rail{ position:fixed; top:0; bottom:0; right:0; width:6px; background:linear-gradient(180deg, var(--sage), var(--amber)); }
+  html[dir="rtl"] .rail{ right:0; }
+
+  .header{
+    padding:28px 20px 20px; max-width:720px; margin:0 auto;
+  }
+  .header .eyebrow{ font-size:12px; font-weight:700; color:var(--sage-strong); letter-spacing:0.5px; }
+  .header h1{ font-family:'Markazi Text',serif; font-size:36px; font-weight:700; margin-top:2px; color:var(--ink); }
+  .header .date{ font-size:12.5px; color:var(--ink-soft); margin-top:4px; }
+
+  .stats-row{ display:flex; gap:10px; max-width:720px; margin:0 auto 20px; padding:0 20px; }
+  .stat-card{
+    flex:1; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 12px; text-align:center;
+  }
+  .stat-card .n{ font-size:24px; font-weight:800; color:var(--sage-strong); }
+  .stat-card.urgent .n{ color:var(--danger); }
+  .stat-card .lbl{ font-size:10.5px; color:var(--ink-soft); margin-top:2px; font-weight:600; }
+
+  .content{ max-width:720px; margin:0 auto; padding:0 20px; }
+
+  .toolbar{ display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+  .tb-btn{
+    flex:1; min-width:140px; padding:12px; border-radius:12px; border:none; background:var(--sage);
+    color:#fff; font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .tb-btn.secondary{ background:var(--surface); color:var(--ink); border:1px solid var(--line); }
+
+  .cat-filter{ display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:16px; scrollbar-width:none; }
+  .cat-filter::-webkit-scrollbar{ display:none; }
+  .cat-chip{
+    flex:none; padding:8px 14px; border-radius:20px; border:1px solid var(--line); background:var(--surface);
+    color:var(--ink-soft); font-size:12.5px; font-weight:700; white-space:nowrap;
+  }
+  .cat-chip.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  .task-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:10px;
+    display:flex; align-items:flex-start; gap:12px; position:relative; overflow:hidden; transition:opacity .25s ease;
+  }
+  .task-card::before{
+    content:''; position:absolute; top:0; bottom:0; right:0; width:5px; background:var(--cat-color, var(--sage));
+  }
+  .task-card.done{ opacity:0.55; }
+  .task-check{
+    flex:none; width:26px; height:26px; border-radius:50%; border:2px solid var(--cat-color, var(--sage));
+    background:none; display:flex; align-items:center; justify-content:center; font-size:14px; color:transparent; margin-top:2px;
+  }
+  .task-check.checked{ background:var(--cat-color, var(--sage)); color:#fff; }
+  .task-body{ flex:1; min-width:0; }
+  .task-title{ font-weight:700; font-size:14.5px; }
+  .task-title.strike{ text-decoration:line-through; color:var(--ink-soft); }
+  .task-notes{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
+  .task-meta{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .task-tag{
+    font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:8px; background:var(--surface-alt); color:var(--ink-soft);
+  }
+  .task-del{ flex:none; background:none; border:none; color:var(--ink-soft); font-size:15px; padding:2px 4px; }
+  .color-swatch{ width:28px; height:28px; border-radius:50%; border:2px solid transparent; flex:none; }
+  .color-swatch.selected{ border-color:var(--ink); }
+  .cat-row{
+    display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:11px 14px; margin-bottom:8px;
+  }
+  .cat-row .cat-icon{ font-size:18px; flex:none; }
+  .cat-row .cat-name{ flex:1; font-weight:700; font-size:13.5px; }
+  .cat-row .protected-note{ font-size:10.5px; color:var(--ink-soft); }
+
+  .empty-state{ text-align:center; color:var(--ink-soft); padding:50px 20px; font-size:13px; }
+  .empty-state .ic{ font-size:34px; margin-bottom:10px; }
+
+  .sheet-overlay{
+    position:fixed; inset:0; background:rgba(43,58,47,0.45); z-index:100; display:flex; align-items:flex-end;
+    opacity:0; pointer-events:none; transition:opacity .2s ease;
+  }
+  .sheet-overlay.open{ opacity:1; pointer-events:auto; }
+  .sheet{
+    background:var(--bg); width:100%; max-width:720px; margin:0 auto; border-radius:22px 22px 0 0; padding:20px 20px 30px;
+    max-height:88vh; overflow-y:auto; transform:translateY(20px); transition:transform .2s ease;
+  }
+  .sheet-overlay.open .sheet{ transform:translateY(0); }
+  .sheet-handle{ width:40px; height:4px; background:var(--line); border-radius:2px; margin:0 auto 16px; }
+  .sheet-title{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .sheet-title h3{ font-family:'Markazi Text',serif; font-size:22px; font-weight:700; }
+  .close-x{ background:none; border:none; font-size:18px; color:var(--ink-soft); padding:4px 8px; }
+
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:6px; }
+  .field input, .field select{
+    width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line); background:var(--surface);
+    color:var(--ink); font-size:14px; outline:none;
+  }
+  .field input:focus, .field select:focus{ border-color:var(--sage); }
+
+  .chip-select{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip-opt{
+    padding:9px 14px; border-radius:20px; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+    font-size:12.5px; font-weight:700;
+  }
+  .chip-opt.selected{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  .primary-btn{
+    width:100%; padding:14px; border-radius:12px; border:none; background:var(--sage); color:#fff;
+    font-weight:800; font-size:15px; margin-top:6px;
+  }
+  .primary-btn:disabled{ opacity:0.5; }
+
+  .member-row{
+    display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:11px 14px; margin-bottom:8px;
+  }
+  .member-dot{ width:12px; height:12px; border-radius:50%; flex:none; }
+  .member-row .name{ flex:1; font-weight:700; font-size:13.5px; }
+  .member-del{ background:none; border:none; color:var(--danger); font-size:13px; }
+
+  .save-msg{ font-size:11.5px; margin-top:8px; min-height:14px; text-align:center; }
+  .save-msg.error{ color:var(--danger); }
+  .save-msg.saved{ color:var(--sage-strong); }
+  .save-msg.saving{ color:var(--ink-soft); }
+
+  .conn-dot{ position:fixed; top:14px; left:14px; font-size:11px; z-index:5; }
+</style>
+</head>
+<body>
+<div class="rail"></div>
+<div class="conn-dot" id="connDot">🟢</div>
+
+<div class="header">
+  <div class="eyebrow">إدارة يومك</div>
+  <h1>🏡 نظام تنظيم المنزل</h1>
+  <div class="date" id="todayDate"></div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="n" id="statPending">0</div>
+    <div class="lbl">مهام باقية</div>
+  </div>
+  <div class="stat-card urgent">
+    <div class="n" id="statOverdue">0</div>
+    <div class="lbl">متأخرة</div>
+  </div>
+  <div class="stat-card">
+    <div class="n" id="statDone">0</div>
+    <div class="lbl">مكتملة اليوم</div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="toolbar">
+    <button class="tb-btn" id="addTaskBtn">➕ إضافة مهمة</button>
+    <button class="tb-btn secondary" id="manageMembersBtn">👨‍👩‍👧 أفراد البيت</button>
+    <button class="tb-btn secondary" id="manageCategoriesBtn">⚙️ الأقسام</button>
+  </div>
+  <div class="toolbar">
+    <button class="tb-btn secondary" id="todayOnlyBtn">📅 مهام اليوم بس</button>
+    <button class="tb-btn secondary" id="darkModeBtn">🌙 داكن</button>
+  </div>
+
+  <div class="cat-filter" id="catFilter"></div>
+
+  <div id="taskList"></div>
+</div>
+
+<!-- add/edit task sheet -->
+<div class="sheet-overlay" id="taskSheetOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <h3>➕ إضافة مهمة</h3>
+      <button class="close-x" id="taskSheetClose">✕</button>
+    </div>
+
+    <div class="field">
+      <label>عنوان المهمة</label>
+      <input type="text" id="taskTitleInput" placeholder="مثال: تنظيف المطبخ" maxlength="60">
+    </div>
+
+    <div class="field">
+      <label>القسم</label>
+      <div class="chip-select" id="taskCategorySelect"></div>
+    </div>
+
+    <div class="field">
+      <label>المسؤول (اختياري)</label>
+      <div class="chip-select" id="taskAssigneeSelect"></div>
+    </div>
+
+    <div class="field">
+      <label>التكرار</label>
+      <div class="chip-select" id="taskRecurrenceSelect"></div>
+    </div>
+
+    <div class="field" id="dueDateField" style="display:none;">
+      <label>تاريخ الاستحقاق</label>
+      <input type="date" id="taskDueDateInput">
+    </div>
+
+    <div class="field">
+      <label>ملاحظات (اختياري)</label>
+      <input type="text" id="taskNotesInput" placeholder="أي تفاصيل إضافية" maxlength="120">
+    </div>
+
+    <button class="primary-btn" id="saveTaskBtn">💾 حفظ المهمة</button>
+    <div class="save-msg" id="taskSaveStatus"></div>
+  </div>
+</div>
+
+<!-- members sheet -->
+<div class="sheet-overlay" id="membersSheetOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <h3>👨‍👩‍👧 أفراد البيت</h3>
+      <button class="close-x" id="membersSheetClose">✕</button>
+    </div>
+
+    <div class="field">
+      <label>إضافة فرد جديد</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="newMemberInput" placeholder="الاسم" maxlength="24" style="flex:1;">
+        <button class="tb-btn" id="addMemberBtn" style="flex:none; min-width:80px;">➕ إضافة</button>
+      </div>
+    </div>
+    <div class="save-msg" id="memberSaveStatus"></div>
+
+    <div id="membersList" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- categories sheet -->
+<div class="sheet-overlay" id="categoriesSheetOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <h3>⚙️ إدارة الأقسام</h3>
+      <button class="close-x" id="categoriesSheetClose">✕</button>
+    </div>
+
+    <div class="field">
+      <label>إضافة قسم جديد</label>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <input type="text" id="newCategoryIcon" placeholder="🎯" maxlength="4" style="flex:none; width:56px; text-align:center;">
+        <input type="text" id="newCategoryLabel" placeholder="اسم القسم" maxlength="20" style="flex:1;">
+      </div>
+      <div class="chip-select" id="newCategoryColorSelect"></div>
+      <button class="tb-btn" id="addCategoryBtn" style="margin-top:10px;">➕ إضافة القسم</button>
+    </div>
+    <div class="save-msg" id="categorySaveStatus"></div>
+
+    <div id="categoriesList" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyASZzpHN3naZ3UxlRGS-VaDiNZV4-upmzA",
+    authDomain: "professional-restaurant-system.firebaseapp.com",
+    projectId: "professional-restaurant-system",
+    storageBucket: "professional-restaurant-system.firebasestorage.app",
+    messagingSenderId: "809714960687",
+    appId: "1:809714960687:web:649fc13dd48972052139da",
+    measurementId: "G-397FXE7298"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  window.homeConnStatus = { ok: true };
+
+  const tasksRef = doc(db, 'homeSystem', 'tasks');
+  onSnapshot(tasksRef, (snap) => {
+    window.homeConnStatus.ok = true;
+    const tasks = (snap.exists() && snap.data().tasks) ? snap.data().tasks : [];
+    window.homeTasks = tasks;
+    if (window.onHomeTasksUpdate) window.onHomeTasksUpdate(tasks);
+  }, (err) => { window.homeConnStatus.ok = false; console.warn('tasks sync error:', err); });
+
+  const membersRef = doc(db, 'homeSystem', 'members');
+  onSnapshot(membersRef, (snap) => {
+    const members = (snap.exists() && snap.data().members) ? snap.data().members : [];
+    window.homeMembers = members;
+    if (window.onHomeMembersUpdate) window.onHomeMembersUpdate(members);
+  }, (err) => console.warn('members sync error:', err));
+
+  const categoriesRef = doc(db, 'homeSystem', 'categories');
+  onSnapshot(categoriesRef, (snap) => {
+    const categories = (snap.exists() && snap.data().categories) ? snap.data().categories : null;
+    window.homeCategories = categories;
+    if (window.onHomeCategoriesUpdate) window.onHomeCategoriesUpdate(categories);
+  }, (err) => console.warn('categories sync error:', err));
+
+  window.saveHomeTasks = function(tasks){
+    return setDoc(tasksRef, { tasks, updatedAt: Date.now() }).then(() => true).catch(() => false);
+  };
+  window.saveHomeMembers = function(members){
+    return setDoc(membersRef, { members, updatedAt: Date.now() }).then(() => true).catch(() => false);
+  };
+  window.saveHomeCategories = function(categories){
+    return setDoc(categoriesRef, { categories, updatedAt: Date.now() }).then(() => true).catch(() => false);
+  };
+</script>
+
+<script>
+(function(){
+  const DEFAULT_CATEGORIES = [
+    { key:'clean', label:'تنظيف', icon:'🧹', color:'#6B8F71' },
+    { key:'shop', label:'تسوق', icon:'🛒', color:'#D9A441' },
+    { key:'maint', label:'صيانة', icon:'🔧', color:'#B56B4F' },
+    { key:'bills', label:'فواتير', icon:'💳', color:'#5B7A99' },
+    { key:'cook', label:'طبخ', icon:'🍳', color:'#8B5A7C' },
+    { key:'general', label:'عام', icon:'📌', color:'#7A7266' },
+  ];
+  const PROTECTED_CATEGORY_KEY = 'general';
+  const CATEGORY_COLOR_CHOICES = ['#6B8F71','#D9A441','#B56B4F','#5B7A99','#8B5A7C','#7A7266','#4A7C8C','#A6544A','#5C7A3E','#8C6A9C'];
+  let CATEGORIES = [...DEFAULT_CATEGORIES];
+  let CAT_MAP = {};
+  function rebuildCatMap(){
+    CAT_MAP = {};
+    CATEGORIES.forEach(c => CAT_MAP[c.key] = c);
+  }
+  rebuildCatMap();
+
+  const RECURRENCE_OPTS = [
+    { key:'once', label:'مرة وحدة' },
+    { key:'daily', label:'يومي' },
+    { key:'weekly', label:'أسبوعي' },
+    { key:'monthly', label:'شهري' },
+  ];
+
+  function escapeHtml(str){
+    if(str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function isoWeekKey(d){
+    const date = new Date(d.getTime());
+    date.setHours(0,0,0,0);
+    date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    const weekNo = 1 + Math.round(((date - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    return date.getFullYear() + '-W' + weekNo;
+  }
+  function monthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+
+  function isTaskDoneNow(task){
+    if(!task.lastCompletedDate) return false;
+    const last = new Date(task.lastCompletedDate + 'T00:00:00');
+    const now = new Date();
+    if(task.recurrence === 'once') return true;
+    if(task.recurrence === 'daily') return task.lastCompletedDate === todayStr();
+    if(task.recurrence === 'weekly') return isoWeekKey(last) === isoWeekKey(now);
+    if(task.recurrence === 'monthly') return monthKey(last) === monthKey(now);
+    return false;
+  }
+  function isTaskOverdue(task){
+    if(isTaskDoneNow(task)) return false;
+    if(task.recurrence === 'once' && task.dueDate){
+      return task.dueDate < todayStr();
+    }
+    return false;
+  }
+
+  let tasks = [];
+  let members = [];
+  let activeCategoryFilter = 'all';
+  let todayOnly = false;
+  let editingTaskId = null;
+  let draftCategory = PROTECTED_CATEGORY_KEY;
+  let draftAssignee = '';
+  let draftRecurrence = 'once';
+  let draftCategoryColor = CATEGORY_COLOR_CHOICES[0];
+  let isDark = false;
+
+  function loadCache(){
+    try{ const raw = localStorage.getItem('home-tasks-cache'); if(raw) tasks = JSON.parse(raw); }catch(e){}
+    try{ const raw = localStorage.getItem('home-members-cache'); if(raw) members = JSON.parse(raw); }catch(e){}
+    try{ const raw = localStorage.getItem('home-categories-cache'); if(raw){ const parsed = JSON.parse(raw); if(parsed && parsed.length){ CATEGORIES = parsed; rebuildCatMap(); } } }catch(e){}
+  }
+  loadCache();
+
+  function renderStats(){
+    const pending = tasks.filter(t => !isTaskDoneNow(t)).length;
+    const overdue = tasks.filter(t => isTaskOverdue(t)).length;
+    const doneToday = tasks.filter(t => t.lastCompletedDate === todayStr()).length;
+    document.getElementById('statPending').textContent = pending;
+    document.getElementById('statOverdue').textContent = overdue;
+    document.getElementById('statDone').textContent = doneToday;
+  }
+
+  function renderCatFilter(){
+    const wrap = document.getElementById('catFilter');
+    const chips = [{key:'all', label:'الكل', icon:'📋'}, ...CATEGORIES];
+    wrap.innerHTML = chips.map(c => `
+      <button class="cat-chip ${activeCategoryFilter===c.key?'active':''}" data-filter-cat="${c.key}">${c.icon} ${c.label}</button>`).join('');
+    wrap.querySelectorAll('[data-filter-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeCategoryFilter = btn.dataset.filterCat;
+        renderCatFilter();
+        renderTaskList();
+      });
+    });
+  }
+
+  function memberById(id){ return members.find(m => m.id === id); }
+
+  function renderTaskList(){
+    const wrap = document.getElementById('taskList');
+    let list = [...tasks];
+    if(activeCategoryFilter !== 'all') list = list.filter(t => t.category === activeCategoryFilter);
+    if(todayOnly){
+      list = list.filter(t => t.recurrence !== 'once' || !t.dueDate || t.dueDate <= todayStr());
+    }
+    list.sort((a,b) => {
+      const aDone = isTaskDoneNow(a) ? 1 : 0;
+      const bDone = isTaskDoneNow(b) ? 1 : 0;
+      if(aDone !== bDone) return aDone - bDone;
+      const aOverdue = isTaskOverdue(a) ? 0 : 1;
+      const bOverdue = isTaskOverdue(b) ? 0 : 1;
+      if(aOverdue !== bOverdue) return aOverdue - bOverdue;
+      return (b.createdAt||0) - (a.createdAt||0);
+    });
+
+    if(!list.length){
+      wrap.innerHTML = `<div class="empty-state"><div class="ic">🌿</div>ما فيه مهام هنا — أضف أول مهمة وابدأ تنظيم بيتك</div>`;
+      return;
+    }
+
+    wrap.innerHTML = list.map(t => {
+      const cat = CAT_MAP[t.category] || CAT_MAP[PROTECTED_CATEGORY_KEY];
+      const done = isTaskDoneNow(t);
+      const overdue = isTaskOverdue(t);
+      const assignee = t.assignee ? memberById(t.assignee) : null;
+      const recLabel = (RECURRENCE_OPTS.find(r => r.key === t.recurrence) || {}).label || '';
+      return `
+      <div class="task-card ${done?'done':''}" style="--cat-color:${cat.color}">
+        <button class="task-check ${done?'checked':''}" data-toggle-task="${t.id}">${done?'✓':''}</button>
+        <div class="task-body" data-edit-task="${t.id}">
+          <div class="task-title ${done?'strike':''}">${cat.icon} ${escapeHtml(t.title)}</div>
+          ${t.notes ? `<div class="task-notes">${escapeHtml(t.notes)}</div>` : ''}
+          <div class="task-meta">
+            <span class="task-tag">${cat.label}</span>
+            ${recLabel ? `<span class="task-tag">${recLabel}</span>` : ''}
+            ${assignee ? `<span class="task-tag">👤 ${escapeHtml(assignee.name)}</span>` : ''}
+            ${overdue ? `<span class="task-tag" style="background:rgba(192,57,43,0.15); color:var(--danger);">⚠️ متأخرة</span>` : ''}
+          </div>
+        </div>
+        <button class="task-del" data-del-task="${t.id}">🗑️</button>
+      </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('[data-edit-task]').forEach(el => {
+      el.addEventListener('click', () => openTaskSheet(el.dataset.editTask));
+    });
+    wrap.querySelectorAll('[data-toggle-task]').forEach(btn => {
+      btn.addEventListener('click', () => toggleTask(btn.dataset.toggleTask));
+    });
+    wrap.querySelectorAll('[data-del-task]').forEach(btn => {
+      btn.addEventListener('click', () => deleteTask(btn.dataset.delTask));
+    });
+  }
+
+  function saveTasksNow(){
+    try{ localStorage.setItem('home-tasks-cache', JSON.stringify(tasks)); }catch(e){}
+    if(window.saveHomeTasks) return window.saveHomeTasks(tasks);
+    return Promise.resolve(false);
+  }
+  function saveMembersNow(){
+    try{ localStorage.setItem('home-members-cache', JSON.stringify(members)); }catch(e){}
+    if(window.saveHomeMembers) return window.saveHomeMembers(members);
+    return Promise.resolve(false);
+  }
+
+  function toggleTask(id){
+    const t = tasks.find(x => x.id === id);
+    if(!t) return;
+    const nowDone = isTaskDoneNow(t);
+    t.lastCompletedDate = nowDone ? null : todayStr();
+    renderStats();
+    renderTaskList();
+    saveTasksNow();
+  }
+  function deleteTask(id){
+    if(!confirm('تحذف هذي المهمة نهائياً؟')) return;
+    tasks = tasks.filter(t => t.id !== id);
+    renderStats();
+    renderTaskList();
+    saveTasksNow();
+  }
+
+  window.onHomeTasksUpdate = function(remoteTasks){
+    tasks = remoteTasks;
+    try{ localStorage.setItem('home-tasks-cache', JSON.stringify(tasks)); }catch(e){}
+    renderStats();
+    renderTaskList();
+  };
+  window.onHomeMembersUpdate = function(remoteMembers){
+    members = remoteMembers;
+    try{ localStorage.setItem('home-members-cache', JSON.stringify(members)); }catch(e){}
+    renderTaskList();
+    if(document.getElementById('membersSheetOverlay').classList.contains('open')) renderMembersList();
+  };
+  window.onHomeCategoriesUpdate = function(remoteCategories){
+    if(remoteCategories && remoteCategories.length){
+      CATEGORIES = remoteCategories;
+      rebuildCatMap();
+      try{ localStorage.setItem('home-categories-cache', JSON.stringify(CATEGORIES)); }catch(e){}
+      renderCatFilter();
+      renderTaskList();
+      if(document.getElementById('categoriesSheetOverlay').classList.contains('open')) renderCategoriesList();
+    }
+  };
+
+  // ---------- add/edit task sheet ----------
+  const taskSheet = document.getElementById('taskSheetOverlay');
+  function renderCategorySelect(){
+    const wrap = document.getElementById('taskCategorySelect');
+    wrap.innerHTML = CATEGORIES.map(c => `
+      <button class="chip-opt ${draftCategory===c.key?'selected':''}" data-cat-opt="${c.key}">${c.icon} ${c.label}</button>`).join('');
+    wrap.querySelectorAll('[data-cat-opt]').forEach(btn => {
+      btn.addEventListener('click', () => { draftCategory = btn.dataset.catOpt; renderCategorySelect(); });
+    });
+  }
+  function renderAssigneeSelect(){
+    const wrap = document.getElementById('taskAssigneeSelect');
+    if(!members.length){
+      wrap.innerHTML = `<div style="font-size:12px; color:var(--ink-soft);">ما فيه أفراد مضافين — أضفهم من "أفراد البيت"</div>`;
+      return;
+    }
+    wrap.innerHTML = `<button class="chip-opt ${!draftAssignee?'selected':''}" data-assignee-opt="">بدون تحديد</button>` +
+      members.map(m => `
+      <button class="chip-opt ${draftAssignee===m.id?'selected':''}" data-assignee-opt="${m.id}">👤 ${escapeHtml(m.name)}</button>`).join('');
+    wrap.querySelectorAll('[data-assignee-opt]').forEach(btn => {
+      btn.addEventListener('click', () => { draftAssignee = btn.dataset.assigneeOpt; renderAssigneeSelect(); });
+    });
+  }
+  function renderRecurrenceSelect(){
+    const wrap = document.getElementById('taskRecurrenceSelect');
+    wrap.innerHTML = RECURRENCE_OPTS.map(r => `
+      <button class="chip-opt ${draftRecurrence===r.key?'selected':''}" data-rec-opt="${r.key}">${r.label}</button>`).join('');
+    wrap.querySelectorAll('[data-rec-opt]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        draftRecurrence = btn.dataset.recOpt;
+        renderRecurrenceSelect();
+        document.getElementById('dueDateField').style.display = draftRecurrence === 'once' ? 'block' : 'none';
+      });
+    });
+  }
+
+  function openTaskSheet(taskId){
+    editingTaskId = taskId || null;
+    const existing = taskId ? tasks.find(t => t.id === taskId) : null;
+    document.getElementById('taskTitleInput').value = existing ? existing.title : '';
+    draftCategory = existing ? existing.category : (CATEGORIES[0] ? CATEGORIES[0].key : PROTECTED_CATEGORY_KEY);
+    draftAssignee = existing ? (existing.assignee || '') : '';
+    draftRecurrence = existing ? existing.recurrence : 'once';
+    document.getElementById('taskDueDateInput').value = existing ? (existing.dueDate || '') : '';
+    document.getElementById('taskNotesInput').value = existing ? (existing.notes || '') : '';
+    document.getElementById('dueDateField').style.display = draftRecurrence === 'once' ? 'block' : 'none';
+    document.querySelector('#taskSheetOverlay h3').textContent = existing ? '✏️ تعديل مهمة' : '➕ إضافة مهمة';
+    document.getElementById('taskSaveStatus').textContent = '';
+    renderCategorySelect();
+    renderAssigneeSelect();
+    renderRecurrenceSelect();
+    taskSheet.classList.add('open');
+  }
+  function closeTaskSheet(){ taskSheet.classList.remove('open'); }
+
+  document.getElementById('addTaskBtn').addEventListener('click', () => openTaskSheet(null));
+  document.getElementById('taskSheetClose').addEventListener('click', closeTaskSheet);
+  taskSheet.addEventListener('click', (e) => { if(e.target === taskSheet) closeTaskSheet(); });
+
+  document.getElementById('saveTaskBtn').addEventListener('click', () => {
+    const title = document.getElementById('taskTitleInput').value.trim();
+    const statusEl = document.getElementById('taskSaveStatus');
+    if(!title){
+      statusEl.textContent = '⚠️ اكتب عنوان للمهمة';
+      statusEl.className = 'save-msg error';
+      return;
+    }
+    const dueDate = document.getElementById('taskDueDateInput').value || null;
+    const notes = document.getElementById('taskNotesInput').value.trim();
+
+    if(editingTaskId){
+      const t = tasks.find(x => x.id === editingTaskId);
+      if(t){
+        t.title = title; t.category = draftCategory; t.assignee = draftAssignee || null;
+        t.recurrence = draftRecurrence; t.dueDate = draftRecurrence === 'once' ? dueDate : null;
+        t.notes = notes || null;
+      }
+    } else {
+      tasks.push({
+        id: 'task-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+        title, category: draftCategory, assignee: draftAssignee || null,
+        recurrence: draftRecurrence, dueDate: draftRecurrence === 'once' ? dueDate : null,
+        notes: notes || null, lastCompletedDate: null, createdAt: Date.now(),
+      });
+    }
+    statusEl.textContent = 'جارِ الحفظ...';
+    statusEl.className = 'save-msg saving';
+    renderStats();
+    renderTaskList();
+    saveTasksNow().then((ok) => {
+      statusEl.textContent = ok ? '✅ تم الحفظ' : '⚠️ تعذّر الحفظ عن بعد — محفوظة بجهازك بس مؤقتاً';
+      statusEl.className = 'save-msg ' + (ok ? 'saved' : 'error');
+      if(ok) setTimeout(closeTaskSheet, 500);
+    });
+  });
+
+  // ---------- members sheet ----------
+  const membersSheet = document.getElementById('membersSheetOverlay');
+  const MEMBER_COLORS = ['#6B8F71','#D9A441','#B56B4F','#5B7A99','#8B5A7C','#7A7266'];
+  function renderMembersList(){
+    const wrap = document.getElementById('membersList');
+    if(!members.length){
+      wrap.innerHTML = `<div class="empty-state"><div class="ic">👪</div>ما فيه أفراد مضافين بعد</div>`;
+      return;
+    }
+    wrap.innerHTML = members.map(m => `
+      <div class="member-row">
+        <span class="member-dot" style="background:${m.color || '#6B8F71'}"></span>
+        <span class="name">${escapeHtml(m.name)}</span>
+        <button class="member-del" data-del-member="${m.id}">🗑️ حذف</button>
+      </div>`).join('');
+    wrap.querySelectorAll('[data-del-member]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.delMember;
+        if(!confirm('تحذف هذا الفرد؟ المهام المعينة له تبقى بس بدون مسؤول محدد.')) return;
+        members = members.filter(m => m.id !== id);
+        tasks.forEach(t => { if(t.assignee === id) t.assignee = null; });
+        renderMembersList();
+        renderTaskList();
+        saveMembersNow();
+        saveTasksNow();
+      });
+    });
+  }
+  document.getElementById('manageMembersBtn').addEventListener('click', () => {
+    renderMembersList();
+    membersSheet.classList.add('open');
+  });
+  document.getElementById('membersSheetClose').addEventListener('click', () => membersSheet.classList.remove('open'));
+  membersSheet.addEventListener('click', (e) => { if(e.target === membersSheet) membersSheet.classList.remove('open'); });
+
+  document.getElementById('addMemberBtn').addEventListener('click', () => {
+    const input = document.getElementById('newMemberInput');
+    const name = input.value.trim();
+    const statusEl = document.getElementById('memberSaveStatus');
+    if(!name){ statusEl.textContent = '⚠️ اكتب اسم'; statusEl.className = 'save-msg error'; return; }
+    const color = MEMBER_COLORS[members.length % MEMBER_COLORS.length];
+    members.push({ id: 'member-' + Date.now().toString(36), name, color });
+    input.value = '';
+    renderMembersList();
+    statusEl.textContent = 'جارِ الحفظ...';
+    statusEl.className = 'save-msg saving';
+    saveMembersNow().then((ok) => {
+      statusEl.textContent = ok ? '✅ تمت الإضافة' : '⚠️ تعذّر الحفظ — تأكد من الإنترنت';
+      statusEl.className = 'save-msg ' + (ok ? 'saved' : 'error');
+    });
+  });
+
+  // ---------- categories management ----------
+  const categoriesSheet = document.getElementById('categoriesSheetOverlay');
+  function saveCategoriesNow(){
+    try{ localStorage.setItem('home-categories-cache', JSON.stringify(CATEGORIES)); }catch(e){}
+    if(window.saveHomeCategories) return window.saveHomeCategories(CATEGORIES);
+    return Promise.resolve(false);
+  }
+  function renderColorSelect(){
+    const wrap = document.getElementById('newCategoryColorSelect');
+    wrap.innerHTML = CATEGORY_COLOR_CHOICES.map(c => `
+      <button class="color-swatch ${draftCategoryColor===c?'selected':''}" data-color-opt="${c}" style="background:${c}"></button>`).join('');
+    wrap.querySelectorAll('[data-color-opt]').forEach(btn => {
+      btn.addEventListener('click', () => { draftCategoryColor = btn.dataset.colorOpt; renderColorSelect(); });
+    });
+  }
+  function renderCategoriesList(){
+    const wrap = document.getElementById('categoriesList');
+    wrap.innerHTML = CATEGORIES.map(c => `
+      <div class="cat-row">
+        <span class="cat-icon">${c.icon}</span>
+        <span class="cat-name">${escapeHtml(c.label)}</span>
+        <span class="member-dot" style="background:${c.color}"></span>
+        ${c.key === PROTECTED_CATEGORY_KEY
+          ? `<span class="protected-note">أساسي</span>`
+          : `<button class="member-del" data-del-cat="${c.key}">🗑️ حذف</button>`}
+      </div>`).join('');
+    wrap.querySelectorAll('[data-del-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.delCat;
+        const cat = CAT_MAP[key];
+        const tasksInCat = tasks.filter(t => t.category === key).length;
+        const msg = tasksInCat > 0
+          ? `تحذف قسم "${cat.label}"؟ ${tasksInCat} مهمة فيه بينتقلون لقسم "عام" تلقائياً.`
+          : `تحذف قسم "${cat.label}"؟`;
+        if(!confirm(msg)) return;
+        CATEGORIES = CATEGORIES.filter(c => c.key !== key);
+        rebuildCatMap();
+        tasks.forEach(t => { if(t.category === key) t.category = PROTECTED_CATEGORY_KEY; });
+        if(activeCategoryFilter === key) activeCategoryFilter = 'all';
+        renderCategoriesList();
+        renderCatFilter();
+        renderTaskList();
+        saveCategoriesNow();
+        saveTasksNow();
+      });
+    });
+  }
+  document.getElementById('manageCategoriesBtn').addEventListener('click', () => {
+    draftCategoryColor = CATEGORY_COLOR_CHOICES[CATEGORIES.length % CATEGORY_COLOR_CHOICES.length];
+    renderColorSelect();
+    renderCategoriesList();
+    categoriesSheet.classList.add('open');
+  });
+  document.getElementById('categoriesSheetClose').addEventListener('click', () => categoriesSheet.classList.remove('open'));
+  categoriesSheet.addEventListener('click', (e) => { if(e.target === categoriesSheet) categoriesSheet.classList.remove('open'); });
+
+  document.getElementById('addCategoryBtn').addEventListener('click', () => {
+    const iconInput = document.getElementById('newCategoryIcon');
+    const labelInput = document.getElementById('newCategoryLabel');
+    const icon = iconInput.value.trim() || '📌';
+    const label = labelInput.value.trim();
+    const statusEl = document.getElementById('categorySaveStatus');
+    if(!label){ statusEl.textContent = '⚠️ اكتب اسم للقسم'; statusEl.className = 'save-msg error'; return; }
+    const key = 'cat-' + Date.now().toString(36);
+    CATEGORIES.push({ key, label, icon, color: draftCategoryColor });
+    rebuildCatMap();
+    labelInput.value = '';
+    iconInput.value = '';
+    renderCategoriesList();
+    renderCatFilter();
+    statusEl.textContent = 'جارِ الحفظ...';
+    statusEl.className = 'save-msg saving';
+    saveCategoriesNow().then((ok) => {
+      statusEl.textContent = ok ? '✅ تمت الإضافة' : '⚠️ تعذّر الحفظ — تأكد من الإنترنت';
+      statusEl.className = 'save-msg ' + (ok ? 'saved' : 'error');
+    });
+  });
+
+  // ---------- today-only filter ----------
+  document.getElementById('todayOnlyBtn').addEventListener('click', () => {
+    todayOnly = !todayOnly;
+    document.getElementById('todayOnlyBtn').classList.toggle('secondary', !todayOnly);
+    document.getElementById('todayOnlyBtn').style.background = todayOnly ? 'var(--sage)' : '';
+    document.getElementById('todayOnlyBtn').style.color = todayOnly ? '#fff' : '';
+    renderTaskList();
+  });
+
+  // ---------- dark mode ----------
+  function loadDarkPref(){
+    try{ return localStorage.getItem('home-dark-mode') === '1'; }catch(e){ return false; }
+  }
+  function applyDark(){
+    document.documentElement.classList.toggle('dark', isDark);
+    document.getElementById('darkModeBtn').textContent = isDark ? '☀️ فاتح' : '🌙 داكن';
+  }
+  isDark = loadDarkPref();
+  document.getElementById('darkModeBtn').addEventListener('click', () => {
+    isDark = !isDark;
+    try{ localStorage.setItem('home-dark-mode', isDark ? '1' : '0'); }catch(e){}
+    applyDark();
+  });
+
+  // ---------- connection indicator ----------
+  window.homeConnStatus = window.homeConnStatus || { ok: true };
+  setInterval(() => {
+    document.getElementById('connDot').textContent = window.homeConnStatus.ok ? '🟢' : '🔴';
+  }, 2000);
+
+  // ---------- init ----------
+  const dayNames = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const now = new Date();
+  document.getElementById('todayDate').textContent = dayNames[now.getDay()] + '، ' + now.getDate() + ' ' + monthNames[now.getMonth()];
+
+  applyDark();
+  renderStats();
+  renderCatFilter();
+  renderTaskList();
+})();
+</script>
+
+</body>
+</html>
